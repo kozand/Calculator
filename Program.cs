@@ -13,34 +13,50 @@ namespace ConsoleApp2
             {
                 string input;
 
+                Console.WriteLine("Calculator App.");
+                Console.WriteLine("Supported operators: + - * /");
+                Console.WriteLine("suported variables: UInt64.");
+                Console.WriteLine("Please write a math expression as in example and press enter:  6 + 55 * 5 - 1 ");
+                Console.WriteLine("For exit - type 'exit' and press enter.");
                 while (true)
                 {
-                    input = Console.ReadLine();
-                    if (input == "exit")
-                        return;
-   
-                   // else if (!System.Text.RegularExpressions.Regex.IsMatch(input, @"^ ([-+] ? ? (\d +|\(\g < 1 >\))( ?[-+*\/] ?\g < 1 >)?)$"))
-                  //     Console.WriteLine("Wrong math exxpression - please chek it. And try again.");
-
-                    System.Text.RegularExpressions.Regex rgx = new System.Text.RegularExpressions.Regex(@"^([-+]? ?(\d+|\(\g<1>\))( ?[-+*\/] ?\g<1>)?)$");
-                    bool chk = rgx.IsMatch(input);
-
-                    using RPN rpn = new RPN(input);
+                    try
                     {
-                        Console.WriteLine("RPN: " + rpn.GetRpn);
-                        Console.WriteLine("=" + rpn.Calculate.ToString());
+                        input = Console.ReadLine();
+                        if (input == "exit")
+                            return;
 
+                        using RPN rpn = new RPN(input);
+                        {
+                            if (rpn.CheckInputExp())
+                            {
+
+                                //  Console.WriteLine("RPN: " + rpn.GetRpn);
+                                Console.WriteLine("=" + rpn.Calculate.ToString());
+                            }
+                            else
+                                Console.WriteLine("Wrong math expression - please chek it, and try again.");
+
+
+                        }
                     }
 
-                    //Perfekcyjne rozwiazanie ;P
-                    //   Console.WriteLine(new System.Data.DataTable().Compute(input, null).ToString());
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
 
-                }
+
+
+        }
+
+                //Perfekcyjne rozwiazanie ;P
+                //   Console.WriteLine(new System.Data.DataTable().Compute(input, null).ToString());
             }
 
             catch (Exception ex)
             {
-                Console.WriteLine("Error: " + ex.Message + " " + ex.StackTrace);
+                Console.WriteLine( "Error: " + ex.Message );
                 Console.ReadLine();
             }
 
@@ -53,7 +69,7 @@ namespace ConsoleApp2
     class RPN : IDisposable
     {
 
-        // chyba lepiej zamineic na const enum
+       
         public static Dictionary<string, int> OpPrio = new Dictionary<string, int>
         {
             {"*", 2 },
@@ -105,6 +121,17 @@ namespace ConsoleApp2
             return 0;
         }
 
+        public bool CheckInputExp()
+        {
+            var regex = new System.Text.RegularExpressions.Regex(@"(?x)^(?> (?<p> \( )* (?>-?\d+(?:\.\d+)?) (?<-p> \) )* )(?>(?:[-+*/](?> (?<p> \( )* (?>-?\d+(?:\.\d+)?) (?<-p> \) )* ))*)(?(p)(?!))$");
+
+            if (regex.IsMatch(cmd) && !OpPrio.ContainsValue(cmd[0]))
+                return true;
+            else
+                return false;
+
+        }
+
         bool IsElement(string _input)
         {
             UInt64 res;
@@ -134,13 +161,19 @@ namespace ConsoleApp2
 
             if (pos > 0)
             {
-                 res = UInt64.TryParse(_input.Substring(_offset, pos - _offset), out _element);
+                if (UInt64.MaxValue.ToString().Length < pos - _offset)
+                    throw new Exception("Too big UInt64 value. Try again.");
+
+                res = UInt64.TryParse(_input.Substring(_offset, pos - _offset), out _element);
                 _offset = pos;
                 
             }
             else
             {
-                 res = UInt64.TryParse(_input.Substring(_offset, _input.Length - _offset), out _element);
+                if (UInt64.MaxValue.ToString().Length < pos - _offset)
+                    throw new Exception("Too big UInt64 value. Try again.");
+
+                res = UInt64.TryParse(_input.Substring(_offset, _input.Length - _offset), out _element);
                 _offset = _offset + (_input.Length - _offset);
             }
 
@@ -277,6 +310,8 @@ namespace ConsoleApp2
                     return _arg1 * _arg2;
                 case "/":
                     return _arg1 / _arg2;
+                case "-":
+                    return _arg1 - _arg2;
             }
 
 
@@ -289,6 +324,81 @@ namespace ConsoleApp2
         {
             
         }
+    }
+
+
+
+    abstract class  Arg 
+    {
+
+        //public Arg(string _arg)
+        //{
+
+
+        //}
+
+
+        public  virtual  Arg Parse(string _arg)
+        {
+            return this;
+
+        }
+
+    }
+
+
+    class ArgInt: Arg
+    {
+        long arg;
+
+        public ArgInt(string _arg)
+        {
+            Parse(_arg);
+        }
+
+        void Parse (string _arg)
+        {
+            if (!long.TryParse(_arg, out arg))
+                throw new Exception("Error on INT64 parsing argument.");
+        }
+
+
+    }
+
+
+    class ArgDouble : Arg
+    {
+        double arg;
+
+        public ArgDouble(string _arg)
+        {
+            Parse(_arg);
+        }
+
+        void Parse(string _arg)
+        {
+            if (!double.TryParse(_arg, out arg))
+                throw new Exception("Error on INT64 parsing argument.");
+        }
+
+    }
+
+    class Operator:Arg
+    {
+
+        public Operator(string _op)
+        {
+
+
+        }
+
+        void Parse(string _op)
+        {
+            
+            
+        }
+
+
     }
 }
 
